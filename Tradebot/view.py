@@ -1,7 +1,10 @@
 # app.py
 
 from dash import Dash, html, Output, Input, State, MATCH, ctx, ALL
+import dash
 from heatmap import get_heatmap_layout, plot_stocks
+from backtest import *
+from intraday import *
 import random
 from data import sector_stocks
 
@@ -15,15 +18,29 @@ toggle_layout = html.Div([
 
 app.layout = html.Div([
     toggle_layout,
-    get_heatmap_layout()
+    html.Div(id='layout-container')
 ])
 
-# @app.callback(
-#     Output("heatmap-plots", "children"),
-#     Input("update-interval", "n_intervals")
-# )
-# def update_plots(n):
-#     return plot_layout()
+@app.callback(
+    Output('layout-container', 'children'),
+    Input('heatmap', 'n_clicks'),
+    Input('intraday', 'n_clicks'),
+    Input('backtest', 'n_clicks')
+)
+def display_layout(heatmap_clicks, intraday_clicks, backtest_clicks):
+    ctx = dash.callback_context
+    val = ctx.triggered[0].get('value')
+    if val is None:
+        return get_heatmap_layout()
+    else:
+        print("fwekfgu")
+        button_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        if button_id == 'heatmap':
+            return get_heatmap_layout()
+        elif button_id == 'intraday':
+            return get_intraday_layout()
+        elif button_id == 'backtest':
+            return get_backtest_layout()
 
 @app.callback(
     Output("selected-stocks-store", "data"),

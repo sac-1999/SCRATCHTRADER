@@ -1,34 +1,51 @@
+import pandas as pd
 import plotly.graph_objects as go
 
-# Sample data
-stocks = ["AAPL", "GOOG", "MSFT", "AMZN"]
-opens = [148, 2780, 325, 3480]  # Opening prices
-highs = [150, 2800, 330, 3500]  # Max price of the day
-lows = [145, 2750, 320, 3450]  # Min price of the day
-closes = [149, 2790, 322, 3490]  # Closing prices
+def get_stock_data():
+    df = pd.read_csv('./data.csv')
+    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    df.set_index('timestamp', inplace=True)
+    df = df.resample('15min').agg({
+        'open': 'first',
+        'high': 'max',
+        'low': 'min',
+        'close': 'last'
+    })
+    df.reset_index(inplace=True)
+    return df
 
-# Calculate percentage changes relative to open price
-opens_pct = [0] * len(opens)  # Open price is the reference (0%)
-highs_pct = [(h - o) / o * 100 for h, o in zip(highs, opens)]
-lows_pct = [(l - o) / o * 100 for l, o in zip(lows, opens)]
-closes_pct = [(c - o) / o * 100 for c, o in zip(closes, opens)]
+df = get_stock_data()
 
-# Create candlestick chart with percentage changes
+# Define the full date range
+full_range = pd.date_range(start=df['timestamp'].min(), end=df['timestamp'].max(), freq='15T')
+df_resampled = df.set_index('timestamp').reindex(full_range).reset_index()
+df_resampled.rename(columns={'index': 'timestamp'}, inplace=True)
+print(df)
+# Identify missing timestamps
+missing_dates = df_resampled[df_resampled.isnull().any(axis=1)]['timestamp']
+print(missing_dates)
+# Create the candlestick chart
 fig = go.Figure(data=[go.Candlestick(
-    x=stocks,
-    open=opens_pct,
-    high=highs_pct,
-    low=lows_pct,
-    close=closes_pct,
-    increasing_line_color="green",
-    decreasing_line_color="red"
+    x=df_resampled['timestamp'],
+    open=df_resampled['open'],
+    high=df_resampled['high'],
+    low=df_resampled['low'],
+    close=df_resampled['close'],
+    increasing_line_color='green',
+    decreasing_line_color='red'
 )])
 
+# Update layout to hide missing time periods
 fig.update_layout(
-    title="Stock Percentage Change (Open-Close Body & High-Low Wicks)",
-    xaxis_title="Stock",
-    yaxis_title="Percentage Change (%)",
-    xaxis_rangeslider_visible=False
+    title='Continuous Candlestick Chart',
+    xaxis_title='Date',
+    yaxis_title='Price',
+    xaxis_rangeslider_visible=False,
+    xaxis=dict(
+        rangebreaks=[
+            dict(values=missing_dates)
+        ]
+    )
 )
 
 fig.show()

@@ -1,0 +1,10 @@
+.backtest-filter{
+    display: flex;
+    flex-direction: row;
+    gap:1rem;
+}
+
+.play-pause-button symbol entry-time exit-time{
+    flex-grow: 1;
+    flex-shrink: 1;
+}

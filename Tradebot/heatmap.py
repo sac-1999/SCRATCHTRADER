@@ -32,18 +32,33 @@ def plot_stocks(stocks, sector="Stock Performance"):
         increasing_line_color="green",
         decreasing_line_color="red"
     )])
-
+    
     fig.update_layout(
-        title=sector,
-        xaxis_title="",
-        yaxis_title="",
-        xaxis_rangeslider_visible=False,
-        height=250,
+        xaxis=dict(
+            tickangle=90,  # Rotates labels by -45 degrees
+            tickmode='auto',  # Automatically adjusts tick labels
+            automargin=False  # Ensures labels are not cut off
+        ),
+        yaxis=dict(ticksuffix='%'),
         margin=dict(t=30, b=30, l=30, r=30),
-        yaxis=dict(ticksuffix='%')
+        height=250,
+            xaxis_rangeslider_visible=False,
+        )
+    
+    wrapped_labels = [label.replace(' ', '<br>') for label in stock_changes[:, 0]]
+    fig.update_xaxes(
+        tickmode='array',
+        tickvals=stock_changes[:, 0],
+        ticktext=wrapped_labels,
+        tickfont=dict(
+            size=10,  
+            family='Arial, sans-serif',
+            color='black'
+        )
     )
 
-    return html.Div([dcc.Graph(figure=fig, config={'displayModeBar': False})], className="heatmap_item")
+    return html.Div([html.Span(sector, className="heatmap-sector-title"),
+        dcc.Graph(figure=fig, config={'displayModeBar': False})], className="heatmap_item")
 
 
 def sector_layout(sector):

@@ -2,9 +2,9 @@
 .toggle {display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    height: 60vh;
     background-color: #f5f5f5;
-    height:80px;
+    height:50px;
 }
 
 .toggle_button {
