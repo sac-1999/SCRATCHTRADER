@@ -1,81 +1,34 @@
-import dash
-from dash import html, dcc, Input, Output
+import plotly.graph_objects as go
 
-app = dash.Dash(__name__)
-server = app.server
+# Sample data
+stocks = ["AAPL", "GOOG", "MSFT", "AMZN"]
+opens = [148, 2780, 325, 3480]  # Opening prices
+highs = [150, 2800, 330, 3500]  # Max price of the day
+lows = [145, 2750, 320, 3450]  # Min price of the day
+closes = [149, 2790, 322, 3490]  # Closing prices
 
-# Define the checklist options for each section
-checklist_sections = [
-    {
-        "title": "Basic Checklist",
-        "options": [
-            {"label": "Understand what `.DS_Store` files are", "value": "awareness"},
-            {"label": "Add `.DS_Store` to .gitignore", "value": "gitignore"},
-            {"label": "Remove existing `.DS_Store` files", "value": "remove"},
-        ],
-        "store_id": "store-dsstore",  # Store ID for this section
-        "output_id": "output-dsstore",  # Output ID for this section
-    },
-    {
-        "title": "Advanced Checklist",
-        "options": [
-            {"label": "Add global Git ignore rule", "value": "global_gitignore"},
-            {"label": "Prevent creation on network drives", "value": "network_prevent"},
-            {"label": "Set up auto-clean script or Git hook", "value": "automation"},
-        ],
-        "store_id": "store-advanced",  # Store ID for this section
-        "output_id": "output-advanced",  # Output ID for this section
-    },
-]
+# Calculate percentage changes relative to open price
+opens_pct = [0] * len(opens)  # Open price is the reference (0%)
+highs_pct = [(h - o) / o * 100 for h, o in zip(highs, opens)]
+lows_pct = [(l - o) / o * 100 for l, o in zip(lows, opens)]
+closes_pct = [(c - o) / o * 100 for c, o in zip(closes, opens)]
 
-app.layout = html.Div([
-    html.H1("`.DS_Store` Management Checklists"),
+# Create candlestick chart with percentage changes
+fig = go.Figure(data=[go.Candlestick(
+    x=stocks,
+    open=opens_pct,
+    high=highs_pct,
+    low=lows_pct,
+    close=closes_pct,
+    increasing_line_color="green",
+    decreasing_line_color="red"
+)])
 
-    # Dynamically create each checklist section
-    *[html.Div([
-        html.H2(section["title"]),
-        dcc.Store(id=section["store_id"], storage_type='local'),
-        dcc.Checklist(
-            id=f'{section["store_id"]}-checklist',
-            options=section["options"],
-            labelStyle={'display': 'block'}
-        ),
-        html.Div(id=section["output_id"]),
-    ]) for section in checklist_sections]  # Using * to unpack the list of Div elements
-])
-
-
-# ----------- LOAD CALLBACKS (on page load) -----------
-
-@app.callback(
-    [Output(f'{section["store_id"]}-checklist', 'value') for section in checklist_sections],
-    [Input(section["store_id"], 'data') for section in checklist_sections],
-    prevent_initial_call=False  # Allow the callback to run when the page is loaded
+fig.update_layout(
+    title="Stock Percentage Change (Open-Close Body & High-Low Wicks)",
+    xaxis_title="Stock",
+    yaxis_title="Percentage Change (%)",
+    xaxis_rangeslider_visible=False
 )
-def load_checklists(*data):
-    # Return the data for each checklist or an empty list if not available
-    return [data[i] if data[i] else [] for i in range(len(data))]
 
-
-# ----------- SAVE CALLBACKS (on user change) -----------
-
-@app.callback(
-    [Output(section["store_id"], 'data') for section in checklist_sections],
-    [Output(section["output_id"], 'children') for section in checklist_sections],
-    [Input(f'{section["store_id"]}-checklist', 'value') for section in checklist_sections],
-    prevent_initial_call=True  # Prevent execution when loading the page for the first time
-)
-def save_checklists(*selected_items):
-    # Create output for each section dynamically
-    data = []
-    output = []
-    for i, selected in enumerate(selected_items):
-        data.append(selected)
-        output.append(html.Ul([
-            html.Li(f"✅ {item.replace('_', ' ').capitalize()}") for item in selected
-        ]) if selected else "Select tasks you've completed.")
-    return data, output
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
+fig.show()

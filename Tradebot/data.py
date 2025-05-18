@@ -6,11 +6,11 @@ sector_stocks = {
     "Energy4": ["ExxonMobil", "Chevron", "Shell"]
 }
 
-percent_changes = {
-    "Apple": 1.2,
-    "Microsoft": -0.5,
-    "Google": 2.1,
-    "Pfizer": -1.3,
-    "Moderna": 0.9
+stockdetails = {
+    "Apple": {'low':-1, 'open':0, 'close':1, 'high':3},
+    "Microsoft": {'low':-1, 'open':0, 'close':15, 'high':19},
+    "Google": {'low':-5, 'open':0, 'close':0, 'high':5},
+    "Pfizer": {'low':-5, 'open':0, 'close':10, 'high':15},
+    "Moderna": {'low':-10, 'open':0, 'close':-6, 'high':8}
 }
 

@@ -1,7 +1,7 @@
 # app.py
 
 from dash import Dash, html, Output, Input, State, MATCH, ctx, ALL
-from heatmap import get_heatmap_layout, plot_layout, plot_stock
+from heatmap import get_heatmap_layout, plot_stocks
 import random
 from data import sector_stocks
 
@@ -18,40 +18,41 @@ app.layout = html.Div([
     get_heatmap_layout()
 ])
 
+# @app.callback(
+#     Output("heatmap-plots", "children"),
+#     Input("update-interval", "n_intervals")
+# )
+# def update_plots(n):
+#     return plot_layout()
+
+@app.callback(
+    Output("selected-stocks-store", "data"),
+    Input({'type': 'sector-checklist', 'index': ALL}, "value"),
+    State({'type': 'sector-checklist', 'index': ALL}, "id")  # Retrieve sector names
+)
+def store_selected_stocks(all_selected_lists, sector_ids):
+    sector_selected = {
+        sector_id["index"]: stocks for sector_id, stocks in zip(sector_ids, all_selected_lists)
+    }    
+    return {"selecteditems": sector_selected} 
+
 @app.callback(
     Output("heatmap-plots", "children"),
-    Input("update-interval", "n_intervals")
+    Input('update-interval', 'n_intervals'),
+    State("selected-stocks-store", "data") 
 )
-def update_plots(n):
-    return plot_layout()
-
-
-@app.callback(
-    Output('dummy-output', 'children'),
-    Input({'type': 'sector-checklist', 'index': ALL}, 'value')
-)
-def get_selected_stocks(all_selected_lists):
-    return f"Selected stocks: {all_selected_lists}"
-
-@app.callback(
-    Output('selected-stocks-store', 'data'),
-    Input({'type': 'sector-checklist', 'index': ALL}, 'value'),
-)
-def update_heatmap(selected_stocks):
-    if not selected_stocks:
-        return []
-    return selected_stocks
-
-# @app.callback(
-#     Output('selected-stocks-store', 'data'),
-#     Input({'type': 'sector-checklist', 'index': ALL}, 'value'),
-#     prevent_initial_call=False  # Allow this callback to run after the initial load
-# )
-# def update_stored_selections(selected_stocks_list):
-#     all_selected_stocks = [stock for sector_stocks in selected_stocks_list for stock in sector_stocks]
-#     print(all_selected_stocks)
-#     return all_selected_stocks
-
+def print_stored_data(n, stored_data):
+    allplots = []
+    stored_data = stored_data['selecteditems']
+    for sector, stocks in stored_data.items():
+        # print("1 : ", sector, " -> ",  stocks)
+        if len(stocks)>0:
+            sectorcharts = plot_stocks(stocks, sector)
+            if sectorcharts is not None:
+                allplots.append(sectorcharts)
+    if not allplots:
+        return [html.Div("No stocks selected, please choose some!", className="empty-message")]
+    return allplots
 
 if __name__ == '__main__':
     app.run(debug=True)

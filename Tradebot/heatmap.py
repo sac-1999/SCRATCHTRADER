@@ -2,26 +2,49 @@
 
 from dash import html, dcc
 import plotly.graph_objects as go
-import random
-from data import sector_stocks  # assumes sector_stocks is a dict
+import numpy as np
+from data import sector_stocks, stockdetails  
 
-# 🔹 Dummy plot for a stock with random change
-def plot_stock(stock, change):
-    fig = go.Figure(go.Bar(
-        x=[stock],
-        y=[change],
-        marker_color='green' if change >= 0 else 'red'
-    ))
+def fetch_sector_details(stocks):
+    stock_changes = []
+    failed_stocks = []
+    for stock in stocks:
+        try:
+            low = stockdetails[stock]['low']
+            high = stockdetails[stock]['high']
+            close = stockdetails[stock]['close']
+            stock_changes.append((stock, low, 0, high, close))
+        except Exception as e:
+            failed_stocks.append((stock, 0, 0, 0, 0))
+    stock_changes.sort(key=lambda x: x[4], reverse=True)
+    stock_changes.extend(failed_stocks)
+    return np.array(stock_changes)
+
+
+def plot_stocks(stocks, sector="Stock Performance"):
+    stock_changes = fetch_sector_details(stocks)
+    fig = go.Figure(data=[go.Candlestick(
+        x=stock_changes[:, 0],
+        open=stock_changes[:, 2],
+        high=stock_changes[:, 3],
+        low=stock_changes[:, 1],
+        close=stock_changes[:, 4],
+        increasing_line_color="green",
+        decreasing_line_color="red"
+    )])
+
     fig.update_layout(
+        title=sector,
+        xaxis_title="",
+        yaxis_title="",
+        xaxis_rangeslider_visible=False,
         height=250,
         margin=dict(t=30, b=30, l=30, r=30),
         yaxis=dict(ticksuffix='%')
     )
+
     return html.Div([dcc.Graph(figure=fig, config={'displayModeBar': False})], className="heatmap_item")
 
-# 🔹 Generate layout with random stock plots
-def plot_layout():
-    return [plot_stock('TCS', round(random.uniform(-2, 2), 2)) for _ in range(10)]
 
 def sector_layout(sector):
     return html.Div([
@@ -30,7 +53,7 @@ def sector_layout(sector):
             dcc.Checklist(
                 id={'type': 'sector-checklist', 'index': sector},  # ✅ unique ID
                 options=[{'label': stock, 'value': stock} for stock in sector_stocks[sector]],
-                value=[],  # or pre-tick some
+                value=[stock for stock in sector_stocks[sector]],  # or pre-tick some
                 className='sector-checklist'
             )
         ])
@@ -44,9 +67,8 @@ def filter_layout():
  
 def get_heatmap_layout():
     return html.Div([
-        dcc.Store(id='selected-stocks-store', storage_type='local'),
-        html.Div(id='dummy-output', style={'display': 'none'}),
+        dcc.Store(id='selected-stocks-store', storage_type='memory'),
         html.Div(id="heatmap-plots", className='heatmap_plots'),
         filter_layout(),
-        dcc.Interval(id='update-interval', interval=100, n_intervals=0)
+        dcc.Interval(id='update-interval', interval=1000, n_intervals=0)
     ], className='heatmap_layout')
